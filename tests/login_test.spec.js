@@ -170,3 +170,124 @@ test('File Downloading @smoke', async ({ page }) => {
         'D:\\PlayWright_Learning\\test_data\\downloaded_file.txt'
     );
 });
+
+
+test('Multiple Windows', async ({ page }) => {
+    await page.goto('https://www.sreenidhirajakrishnan.com/practice');
+    await page.locator('a[href="#section-20"]').click();
+    const [new_tab] = await Promise.all([
+        page.context().waitForEvent('page'),
+        page.locator('#open-window-btn').click(),
+    ]);
+    await new_tab.waitForLoadState();
+    console.log('New tab URL:', new_tab.url());
+    await new_tab.close();
+});
+
+
+test('web tables - read and verify data', async ({ page }) => {
+  await page.goto('https://demoqa.com/webtables');
+  const firstRow = rows.first();
+  const firstName = await firstRow.locator('td').nth(0).textContent();
+  const lastName = await firstRow.locator('td').nth(1).textContent();
+  console.log('First row: ' + firstName + ' ' + lastName);
+});
+
+
+test('web tables - dynamic', async ({ page }) => {
+  await page.goto('https://demoqa.com/webtables');
+  const rows = page.locator('table tbody tr');
+  const countBefore = await rows.count();
+  console.log('Rows before adding: ' + countBefore);
+  await page.getByRole('button', { name: 'Add' }).click();
+  await page.locator('#firstName').fill('Umme');
+  await page.locator('#lastName').fill('Abiha');
+  await page.locator('#userEmail').fill('umme@abc.com');
+  await page.locator('#age').fill('28');
+  await page.locator('#salary').fill('50000');
+  await page.locator('#department').fill('QA');
+  await page.getByRole('button', { name: 'Submit' }).click();
+  const countAfter = await rows.count();
+  console.log('Rows after adding: ' + countAfter);
+  expect(countAfter).toBe(countBefore + 1);
+  const newRow = rows.filter({ hasText: 'umme@abc.com' });
+  await expect(newRow).toBeVisible();
+  await expect(newRow.locator('td').nth(0)).toHaveText('Umme');
+});
+
+//dynamic delete
+test
+('web tables delete', async ({ page }) => {
+  await page.goto('https://demoqa.com/webtables');
+  const delete_button = page.locator('table tbody tr', { hasText: 'Cierra' }).getByTitle('Delete');
+  await delete_button.click();
+  await expect(page.locator('table tbody tr', { hasText: 'Cierra' })).not.toBeVisible(); 
+});
+
+
+
+test('pagination - click page 2', async ({ page }) => {
+  await page.goto('https://testautomationpractice.blogspot.com/');
+  await page.locator('#pagination').getByRole('link', { name: '2', exact: true }).click();
+  await expect(page.locator('#pagination li a.active')).toHaveText('2');
+  const rows = page.locator('#productTable tbody tr');
+  await expect(rows.first()).toBeVisible();
+});
+
+
+//multiple windows using promise
+test('Multiple Windows test', async ({ page }) => {
+    await page.goto('https://the-internet.herokuapp.com/windows');
+
+    const [new_tab] = await Promise.all([
+        page.context().waitForEvent('page'),
+        page.getByRole('link', { name: 'Click Here' }).click(),
+    ]);
+    await new_tab.waitForLoadState();
+    console.log('New tab URL:', new_tab.url());
+    await expect(new_tab).toHaveURL('https://the-internet.herokuapp.com/windows/new');
+    await expect(new_tab.locator('h3')).toHaveText('New Window');
+    await new_tab.close();
+});
+
+test('date picker - simple example', async ({ page }) => {
+  await page.goto('https://demoqa.com/date-picker');
+  await page.locator('#datePickerMonthYearInput').fill('08/25/2026');
+  await page.keyboard.press('Escape');
+  const value = await page.locator('#datePickerMonthYearInput').inputValue();
+  console.log('Selected date: ' + value);
+});
+
+//date picker with actual selection
+test('date picker - select tomorrow', async ({ page }) => {
+  await page.goto('https://demoqa.com/date-picker');
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const day = tomorrow.getDate();
+  const month = tomorrow.toLocaleString('default', { month: 'long' });
+  await page.locator('#datePickerMonthYearInput').click();
+  await page.getByRole('gridcell', { name: month + ' ' + day }).click();
+  const fieldValue = await page.locator('#datePickerMonthYearInput').inputValue();
+  console.log('Field now shows: ' + fieldValue);
+  expect(fieldValue).toContain(String(day));
+});
+
+
+
+//fully dynamic date picker 
+test.only('date picker - fully dynamic', async ({ page }) => {
+  await page.goto('https://demoqa.com/date-picker');
+const targetDate = new Date();
+  targetDate.setMonth(targetDate.getMonth() + 2);
+  const day = targetDate.getDate();
+  const month = targetDate.toLocaleString('default', { month: 'long' });
+  const year = targetDate.getFullYear();
+  console.log('Target date: ' + month + ' ' + day + ', ' + year);
+  await page.locator('#datePickerMonthYearInput').click();
+  await page.locator('.react-datepicker__year-select').selectOption(String(year));
+  await page.locator('.react-datepicker__month-select').selectOption(month);
+  await page.getByRole('gridcell', { name: month + ' ' + day }).click();
+  const fieldValue = await page.locator('#datePickerMonthYearInput').inputValue();
+  console.log('Field now shows: ' + fieldValue);
+  expect(fieldValue).toContain(String(day));
+});
